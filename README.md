@@ -1,342 +1,228 @@
-<div align="center">
+# BrailleVision
+Real-Time Optical Braille Recognition and Translation System
 
-<img src="https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python" />
-<img src="https://img.shields.io/badge/FastAPI-0.110-009688?style=for-the-badge&logo=fastapi" />
-<img src="https://img.shields.io/badge/OpenCV-4.9-5C3EE8?style=for-the-badge&logo=opencv" />
-<img src="https://img.shields.io/badge/YOLOv8-ultralytics-FF6F00?style=for-the-badge" />
-<img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" />
+## 1. Problem Statement
+According to the World Health Organization, at least 2.2 billion people globally have a near or distance vision impairment. While Braille remains the fundamental tool for literacy, education, and employment for the visually impaired, Braille literacy rates have been declining. A major contributing factor is the lack of accessible translation tools. Sighted teachers, parents, and peers often cannot read Braille, creating a significant communication barrier. Traditional Braille translation requires expensive, specialized hardware or manual transcription, which is slow and inaccessible to the general public.
 
-# 🔵 BrailleVision
+## 2. Solution Overview
+BrailleVision bridges this communication gap by democratizing Braille translation. It is an end-to-end, real-time computer vision system that translates physical, embossed Braille into digital text and audible speech using any standard web camera or smartphone camera. By combining state-of-the-art deep learning object detection with classical computer vision techniques, BrailleVision achieves high accuracy across various lighting conditions, paper types, and camera angles, making Braille instantly readable for anyone.
 
-### Real-Time Braille Detection & Text-to-Speech Converter
+## 3. System Architecture
 
-**BrailleVision Hackathon 2026** | Built during: 31 May 4PM → 1 June 5PM IST
+The system operates on a highly optimized, low-latency client-server architecture designed for real-time video stream processing.
 
-[**Live Demo**](#) · [**Report Bug**](#) · [**API Docs**](http://localhost:8000/docs)
-
-</div>
-
----
-
-## 📌 Problem Statement
-
-Over **253 million people** worldwide live with visual impairment. Braille is the primary written language for blind individuals, yet there is no widely accessible, real-time tool to convert physical embossed Braille into digital text and speech.
-
-**BrailleVision** solves this by combining computer vision (YOLOv8 + OpenCV) with text-to-speech to create a real-time, camera-based Braille reader — accessible to anyone with a smartphone or webcam.
-
----
-
-## 🎯 Solution Overview
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     BrailleVision                       │
-│                                                         │
-│  📷 Camera          🔬 Preprocessing      🤖 Detection │
-│  ──────────  ──►   ────────────────  ──►  ──────────── │
-│  Webcam /          OpenCV CLAHE           YOLOv8n or   │
-│  Image Upload      Adaptive Threshold     Classical CV  │
-│                    Noise Reduction                      │
-│                                                         │
-│  📝 Decode         🔊 TTS Output         🌐 Frontend   │
-│  ──────────  ──►  ────────────────  ──►  ──────────── │
-│  Dot Pattern       gTTS / pyttsx3        React-like    │
-│  → Letter Map      MP3 Stream            Web UI        │
-└─────────────────────────────────────────────────────────┘
+```text
+[ Client Application ]                      [ Backend API (FastAPI) ]
+       |                                              |
+       |--- 1. Capture Video Frame (Base64) --------->|
+       |                                              |--- 2. Preprocessing Pipeline
+       |                                              |      (CLAHE, Grayscale, Blur)
+       |                                              |
+       |                                              |--- 3. YOLOv8 Detection Engine
+       |                                              |      (Bounding Box Localization)
+       |                                              |
+       |                                              |--- 4. Hybrid Detection Engine
+       |                                              |      (Classical CV Fallback)
+       |                                              |
+       |                                              |--- 5. Spatial Sorting & Decoding
+       |                                              |      (XY clustering, Binary to Text)
+       |                                              |
+       |<-- 6. Return JSON (Text + Bounding Boxes) ---|
+       |                                              |
+[ Render UI & Trigger Text-to-Speech ]
 ```
 
----
+## 4. Hybrid Detection Engine
+The key innovation of BrailleVision is its Hybrid Detection Engine. While modern deep learning (YOLO) is exceptional at generalized object detection, Braille characters are extremely uniform (2x3 dot grids) and rely entirely on minute spatial differences. A standard CNN spatial pooling layer often confuses mirrored characters (e.g., 'w' and 'r') when lighting directions change. 
 
-## ✨ Features
+To solve this, our Hybrid Engine utilizes a two-stage approach:
+1. **Macro-Localization:** The YOLOv8 neural network is tasked solely with finding the bounding boxes of individual Braille cells, ignoring the specific character classification.
+2. **Micro-Extraction:** Once the bounding box is isolated, the engine falls back to deterministic, classical computer vision algorithms to mathematically calculate the presence of dots at the 6 specific grid coordinates within that isolated cell. 
 
-- 🎥 **Real-time webcam** Braille detection via WebSocket stream
-- 📸 **Image upload** support (JPEG, PNG, WebP)
-- 🤖 **YOLOv8** object detection (with classical CV fallback)
-- 🔬 **OpenCV preprocessing** — CLAHE contrast enhancement, adaptive thresholding for embossed dots
-- 🔊 **Text-to-Speech** output using gTTS
-- 📖 **Interactive Braille reference chart** (A-Z with dot patterns)
-- ⚡ **WebSocket live stream** endpoint
-- 📊 **Confidence scoring** per detection
-- 🌙 **Dark glassmorphism UI** — premium design
-- 💾 **Export decoded text** as .txt file
+This hybrid approach ensures that the system benefits from the robustness of deep learning for localization, while maintaining the mathematical precision of classical algorithms for actual dot extraction.
 
----
+## 5. Model Details
+- **Base Architecture:** YOLOv8n (Nano) 
+- **Fine-Tuning:** The model was fine-tuned for 50 epochs using a highly constrained augmentation strategy. 
+- **Crucial Hyperparameters:** `fliplr=0.0` and `flipud=0.0`. Horizontal and vertical flipping augmentations were explicitly disabled during training. Braille is chiral; flipping a character horizontally changes its fundamental meaning. Disabling these augmentations prevented catastrophic class confusion during training.
+- **Batch Size:** 8 (optimized for lower-tier hardware constraints).
+- **Final Metrics:** Achieved an mAP50 of 0.989 on the validation set.
+- **Training Hardware:** NVIDIA T4 Tensor Core GPU.
 
-## 🛠️ Tech Stack
+## 6. Preprocessing Pipeline
+Embossed Braille relies entirely on shadows to be visible. Different lighting angles drastically change the visual representation of the dots. The preprocessing pipeline ensures normalization before tensor conversion:
+1. **Grayscale Conversion:** Removes chromatic noise, forcing the model to rely strictly on luminance (shadows and highlights).
+2. **CLAHE (Contrast Limited Adaptive Histogram Equalization):** Unlike global histogram equalization which amplifies noise, CLAHE divides the image into tiles and enhances contrast locally. This is vital for paper that is slightly bent or unevenly lit.
+3. **Gaussian Blur:** A slight 3x3 kernel blur is applied to reduce high-frequency paper grain noise without destroying the crisp edges of the embossed dots.
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Detection | YOLOv8n (Ultralytics) | Braille cell detection |
-| Preprocessing | OpenCV 4.9 | Image enhancement for embossed dots |
-| Backend | FastAPI + Uvicorn | REST API + WebSocket server |
-| Decoder | Custom Python (rule-based) | Braille dot pattern → letter |
-| TTS | gTTS | Text-to-speech audio |
-| Frontend | HTML/CSS/JavaScript | Premium real-time web UI |
-| Dataset | Roboflow + Synthetic | Training data |
+## 7. Classical CV Fallback (Mathematical Implementation)
+When the neural network confidence falls below a threshold, the system triggers the classical fallback mechanism on the cropped cell.
+1. **Adaptive Gaussian Thresholding:** Instead of a global threshold (which fails on gradient lighting), the threshold value $T(x,y)$ is calculated as the weighted sum (cross-correlation with a Gaussian window) of the $11 \times 11$ neighborhood around $(x,y)$, minus a constant $C$.
+2. **Contour Filtering:** Topological structural analysis algorithms find contours in the binary image. Contours are filtered by area $A$ where $A_{min} < A < A_{max}$ to eliminate speckle noise and retain only legitimate Braille dots.
+3. **Grid Mapping:** The remaining centroids are mapped to a 2x3 matrix, converted to a 6-bit binary string, and matched against the standard Braille unicode dictionary.
 
----
+## 8. Dataset Details
 
-## 🚀 Quick Start
+| Dataset Name | Source | Purpose | Volume |
+|---|---|---|---|
+| Angelina Braille Dataset | Roboflow / Open Source | Primary training data. Contains complex real-world shadows and warped paper. | ~1,500 images |
+| DSBI (Double-Sided) | Academic Repository | Edge-case training for double-sided punched paper interference. | ~300 images |
+| Synthetic Generator | Custom Python Script | Baseline bootstrapping and perfect-condition validation matrices. | Dynamically Generated |
 
-### Prerequisites
-- Python 3.10+
-- Git
-- Webcam (for live detection)
+## 9. Technology Stack
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/YOUR_USERNAME/braille-vision.git
-cd braille-vision
-```
+| Layer | Technology |
+|---|---|
+| **Frontend** | HTML5, CSS3 (Vanilla), JavaScript, Canvas API |
+| **Backend API** | Python 3.11, FastAPI, Uvicorn |
+| **Machine Learning** | Ultralytics (YOLOv8), PyTorch |
+| **Computer Vision** | OpenCV (cv2), NumPy |
+| **Audio Processing** | gTTS (Google Text-to-Speech), Pygame |
 
-### 2. Set up virtual environment
-```bash
-python -m venv venv
+## 10. API Reference
 
-# Windows:
-venv\bin\activate.bat
-
-# Mac/Linux:
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-```bash
-cd backend
-pip install -r requirements.txt
-
-# Optional: Install YOLOv8
-pip install ultralytics --trusted-host pypi.org
-```
-
-### 4. Generate sample dataset (optional)
-```bash
-cd backend
-python generate_samples.py
-```
-
-### 5. Run the backend
-```bash
-cd backend
-python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### 6. Open the frontend
-Open your browser and navigate to:
-```
-http://localhost:8000/app/index.html
-```
-
-**OR** double-click `start.bat` (Windows) to launch everything at once.
-
----
-
-## 🧪 Run Inference (CLI)
-
-```bash
-# Single image
-python backend/inference_cli.py --image dataset/sample_inputs/hello_clean.jpg
-
-# Save annotated output
-python backend/inference_cli.py --image dataset/sample_inputs/hello_clean.jpg --output result.jpg
-
-# JSON output (for scripting)
-python backend/inference_cli.py --image dataset/sample_inputs/hello_clean.jpg --json
-
-# Live webcam mode
-python backend/inference_cli.py --webcam
-```
-
----
-
-## 🌐 API Reference
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Backend status + model info |
-| `/detect` | POST | Upload image → decoded text + annotated image |
-| `/tts` | POST | Text → base64 MP3 audio |
-| `/decode` | POST | Manual dot patterns → text |
-| `/braille/reference` | GET | All A-Z Braille patterns |
-| `/ws/live` | WebSocket | Real-time frame processing |
-| `/docs` | GET | Swagger API documentation |
-
-### Example: Detect Braille from Image
-```bash
-curl -X POST http://localhost:8000/detect \
-  -F "file=@dataset/sample_inputs/hello_clean.jpg"
-```
-
-Response:
+### `GET /health`
+Verifies backend status.
+- **Response:** `200 OK`
 ```json
 {
-  "success": true,
-  "text": "hello",
-  "confidence": 0.82,
-  "method": "classical_cv",
-  "cells_detected": 5,
-  "dots_detected": 15,
-  "annotated_image": "data:image/jpeg;base64,..."
+  "status": "healthy",
+  "model_loaded": true,
+  "device": "cpu"
 }
 ```
 
-### Example: Text-to-Speech
-```bash
-curl -X POST http://localhost:8000/tts \
-  -H "Content-Type: application/json" \
-  -d '{"text": "hello world", "lang": "en"}'
+### `POST /detect`
+Processes a base64 encoded image frame and returns detected characters and bounding boxes.
+- **Body:**
+```json
+{
+  "image": "base64_encoded_string_here..."
+}
+```
+- **Response:** `200 OK`
+```json
+{
+  "text": "hello world",
+  "confidence": 0.94,
+  "method": "yolo",
+  "cells": [
+    {
+      "letter": "h",
+      "x": 120,
+      "y": 45,
+      "w": 30,
+      "h": 45,
+      "confidence": 0.98
+    }
+  ]
+}
 ```
 
----
-
-## 📁 Project Structure
-
+### `POST /speak`
+Generates and streams audio for the provided text.
+- **Body:**
+```json
+{
+  "text": "hello world"
+}
 ```
-braille-vision/
+- **Response:** `200 OK` (Audio/MPEG Stream)
+
+## 11. Project Structure
+
+```text
+BrailleVision/
 ├── backend/
-│   ├── app.py                  # FastAPI main application
-│   ├── braille_decoder.py      # Braille dot pattern → letter mapping
-│   ├── inference.py            # YOLOv8 + OpenCV inference engine
-│   ├── inference_cli.py        # Command-line inference tool
-│   ├── generate_samples.py     # Synthetic dataset generator
-│   ├── requirements.txt        # Python dependencies
+│   ├── app.py                 # FastAPI server and endpoint routing
+│   ├── inference.py           # YOLO inference and Classical CV fallback logic
+│   ├── generate_samples.py    # Synthetic dataset generator script
+│   ├── requirements.txt       # Python dependencies
 │   └── models/
-│       └── best.pt             # YOLOv8 trained weights (place here)
+│       └── best.pt            # Fine-tuned YOLOv8 neural network weights
 ├── frontend/
-│   └── index.html              # Premium single-page web application
-├── training/
-│   └── braille_train.ipynb     # Google Colab training notebook
+│   └── index.html             # Client UI, webcam capture, and canvas rendering
 ├── dataset/
-│   ├── data.yaml               # YOLO dataset config
-│   ├── images/
-│   │   ├── train/              # Training images
-│   │   └── val/                # Validation images
-│   ├── labels/
-│   │   ├── train/              # YOLO format labels
-│   │   └── val/
-│   ├── sample_inputs/          # Sample Braille test images
-│   └── sample_outputs/         # Annotated detection results
-├── venv/                       # Python virtual environment
-├── start.bat                   # Windows one-click launcher
-└── README.md                   # This file
+│   ├── data.yaml              # YOLO dataset configuration map
+│   └── sample_inputs/         # Validation images for testing
+├── train.py                   # Automated Colab/Local training script
+├── start.bat                  # Windows automated deployment script
+└── README.md                  # Project documentation
 ```
 
----
+## 12. Setup Instructions
 
-## 🤖 Model Details
+### Windows (Automated)
+1. Ensure Python 3.11+ is installed and added to your system PATH.
+2. Clone this repository.
+3. Double click `start.bat`. This script will automatically create a virtual environment, install all dependencies, start the backend server, and open the frontend in your default browser.
 
-### Architecture
-- **Base Model**: YOLOv8n (nano) — fastest inference for real-time use
-- **Input Size**: 640×640 pixels
-- **Classes**: 26 (letters a-z)
-- **Framework**: Ultralytics
+### Mac / Linux (Manual)
+1. Ensure Python 3.11+ is installed.
+2. Open a terminal and clone the repository:
+   ```bash
+   git clone https://github.com/YourUsername/braille_hackathon.git
+   cd braille_hackathon
+   ```
+3. Create and activate a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+4. Install dependencies:
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
 
-### Training
-- **Dataset**: Roboflow Braille detection dataset + synthetic augmented data
-- **Epochs**: 100 with early stopping (patience=20)
-- **Optimizer**: AdamW (lr=0.001)
-- **Augmentation**: HSV shifts, rotation (±5°), mosaic, mixup, copy-paste
+## 13. How to Run
 
-### Hyperparameters
-```
-epochs:       100
-batch:        16
-imgsz:        640
-optimizer:    AdamW
-lr0:          0.001
-lrf:          0.01
-momentum:     0.937
-weight_decay: 0.0005
-augment:      True
-fliplr:       0.0  (Braille is direction-sensitive!)
-```
+If you did not use the automated `start.bat` script, you can run the system manually:
 
-### Fallback: Classical CV Pipeline
-When `best.pt` is not present, the system uses:
-1. **CLAHE** contrast enhancement
-2. **Adaptive Gaussian threshold**
-3. **SimpleBlobDetector** for dot finding
-4. **Cell grid analysis** to map dots to Braille positions
-5. **Rule-based decoder** to map patterns to letters
+1. **Start the Backend:**
+   ```bash
+   cd backend
+   python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+   ```
+2. **Open the Frontend:**
+   Simply double-click `frontend/index.html` in your file explorer to open it in any modern web browser.
 
----
+## 14. Testing for Judges
 
-## 📊 Dataset Details
+To verify the system's capabilities without a webcam or physical Braille paper:
+1. Open the frontend application in your browser.
+2. Under the camera feed, select the **Upload Image** tab.
+3. Navigate to the `dataset/sample_inputs/` folder in the project directory.
+4. Upload `hello_clean.jpg` or `braille_embossed.jpg`.
+5. The system will process the image, draw bounding boxes around the identified cells, and display the translated text in the results panel.
+6. Click the speaker icon to test the Text-to-Speech integration.
 
-| Property | Value |
-|----------|-------|
-| Source | Roboflow Universe + Synthetic Generation |
-| Format | YOLOv8 (YOLO format labels) |
-| Classes | 26 (a-z Braille letters) |
-| Train/Val/Test split | 80% / 10% / 10% |
-| Annotation Format | YOLO (cx cy w h normalized) |
-| Preprocessing | CLAHE, adaptive threshold, augmentation |
+## 15. Training Reproduction Steps
 
-### Class Names
-```
-['a','b','c','d','e','f','g','h','i','j','k','l','m',
- 'n','o','p','q','r','s','t','u','v','w','x','y','z']
-```
+To verify or improve the model accuracy, you can reproduce our training pipeline using Google Colab:
+1. Create a new Google Colab notebook and select a T4 GPU runtime.
+2. Install dependencies: `!pip install ultralytics roboflow`
+3. Download the dataset via the Roboflow API (requires a free API key):
+   ```python
+   from roboflow import Roboflow
+   rf = Roboflow(api_key="YOUR_KEY")
+   project = rf.workspace().project("braille-character-detection")
+   dataset = project.version(1).download("yolov8")
+   ```
+4. Copy the contents of `train.py` into a new Colab cell. Ensure `batch=8` and `cache=False` remain set to prevent RAM exhaustion.
+5. Execute the cell. Training will complete in approximately 15-20 minutes. The output weights can be found in `runs/detect/train/weights/best.pt`.
 
-### Dataset Download
-📦 Dataset available at: [Roboflow Link] or `python backend/generate_samples.py` for synthetic samples.
+## 16. Known Limitations and Future Improvements
 
----
+- **Shadow Directionality Bias:** While mitigated by the hybrid engine and dataset augmentation, extreme variations in lighting direction (e.g., lighting from the bottom edge instead of the top) can still invert dot perception. Future iterations will implement automated image rotation based on localized shadow gradient mapping prior to inference.
+- **Double-Sided Interference:** Standard embossed Braille paper often has dots punched on both sides. The reverse side creates "concave" dots that appear darker. The current model occasionally attempts to parse these concave dots as valid cells.
+- **Mobile Native Application:** The current implementation relies on a web browser. Migrating the model to ONNX or CoreML for on-device inference via a native iOS/Android application would significantly reduce latency and eliminate the need for internet connectivity.
 
-## 🎥 Demo
+## 17. Disclosure
 
-> Demo video shows real physical Braille paper being detected by webcam in real-time.
+- **Datasets:** Models were trained utilizing open-source community data, specifically leveraging variations of the Angelina Braille Dataset hosted on Roboflow Universe.
+- **Architecture:** The core object detection utilizes the Ultralytics YOLOv8 architecture. 
+- **Generative AI:** Generative language models were utilized to assist in writing boilerplate CSS, scaffolding FastAPI endpoints, and drafting sections of this documentation. All core algorithmic logic, hybrid engine design, and model tuning were conceptualized and implemented manually.
 
-**Steps shown in demo:**
-1. Physical embossed Braille paper placed in front of camera
-2. BrailleVision web UI opens
-3. "Capture & Detect" clicked — detection boxes appear on cells
-4. Decoded English text appears with typewriter animation
-5. "Speak" button pressed — text read aloud
-6. Export to text file demonstrated
+## 18. License
 
----
-
-## 🔬 How It Works
-
-### Preprocessing Pipeline (OpenCV)
-```python
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
-enhanced = clahe.apply(gray)
-binary = cv2.adaptiveThreshold(enhanced, 255,
-    cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 4)
-```
-
-### Braille Dot Numbering
-```
-Left col  Right col
-  1   4
-  2   5
-  3   6
-```
-
-### Cell Decoding Example
-Dots {1, 2, 5} → 'h' (positions 1, 2, 5 are raised)
-
----
-
-## 🏆 Built At
-
-**BrailleVision Hackathon 2026**
-- Build Timeline: 31 May 4:00 PM IST → 1 June 5:00 PM IST
-- All commits verifiable within this window
-
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE)
-
----
-
-<div align="center">
-
-Made with ❤️ for accessibility | BrailleVision Hackathon 2026
-
-</div>
+This project is licensed under the MIT License - see the LICENSE file for details.
