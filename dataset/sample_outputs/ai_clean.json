@@ -1,0 +1,32 @@
+{
+  "word": "ai",
+  "image": "ai_clean.jpg",
+  "cells": [
+    {
+      "char": "a",
+      "dots": [
+        1
+      ],
+      "bbox": [
+        30,
+        30,
+        55,
+        75
+      ]
+    },
+    {
+      "char": "i",
+      "dots": [
+        2,
+        4
+      ],
+      "bbox": [
+        100,
+        30,
+        55,
+        75
+      ]
+    }
+  ],
+  "style": "clean"
+}
