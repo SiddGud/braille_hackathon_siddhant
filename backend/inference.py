@@ -3,9 +3,8 @@ import cv2
 import math
 import torch
 import numpy as np
-from ultralytics import YOLO
+from ultralytics import YOLO, RTDETR
 
-# Global YOLO model
 _yolo_model = None
 
 BINARY_TO_LETTER = {
@@ -212,11 +211,11 @@ def run_inference_yolo(image: np.ndarray) -> dict:
     if boxes is None or len(boxes) == 0:
         return run_inference_classical(image)
 
-    # 4. YOLO confidence threshold: Lower from 0.4 to 0.15 + NMS 50%
+    # 4. YOLO confidence threshold: Raised to 0.5 to prevent hallucinations on Type 1 images
     initial_boxes = []
     for i in range(len(boxes)):
         conf = float(boxes.conf[i].cpu().numpy())
-        if conf < 0.15:
+        if conf < 0.5:
             continue
             
         box = boxes.xyxy[i].cpu().numpy()
@@ -283,14 +282,25 @@ def run_inference_yolo(image: np.ndarray) -> dict:
         avg_w = sum(b['w'] for b in line) / len(line)
         
         for i, b in enumerate(line):
-            raw_label = class_names.get(b['cls'], '?') if class_names else '?'
+            cls_id = int(b['cls'])
+            raw_label = str(class_names.get(cls_id, '?')) if class_names else '?'
+            
             if len(raw_label) == 6 and all(c in '01' for c in raw_label):
+                # Scenario 1: Model outputs 6-bit binary sequences
                 letter = BINARY_TO_LETTER.get(raw_label, '?')
                 if letter == '?':
                     mirrored = raw_label[3:6] + raw_label[0:3]
                     letter = BINARY_TO_LETTER.get(mirrored, '?')
+            elif len(raw_label) == 1 and raw_label.isalpha():
+                # Scenario 2: Model outputs clean alphabet characters
+                letter = raw_label.lower()
             else:
-                letter = raw_label
+                # Scenario 3: Corrupted dataset (README strings) or raw integers
+                # Fall back to hardcoded index mapping (0->a, 1->b)
+                if 0 <= cls_id <= 25:
+                    letter = chr(ord('a') + cls_id)
+                else:
+                    letter = '?'
 
             cells.append({
                 'x': b['x'], 'y': b['y'], 'w': b['w'], 'h': b['h'],

@@ -145,8 +145,8 @@ async def detect_braille(file: UploadFile = File(...)):
         "cells_detected": result["cells_detected"],
         "dots_detected": result["dots_detected"],
         "cells": result["cells"],
-        "annotated_image": f"data:image/jpeg;base64,{annotated_b64}",
-        "preprocessed_image": f"data:image/jpeg;base64,{preprocessed_b64}",
+        "annotated_image": annotated_b64,
+        "preprocessed_image": preprocessed_b64,
     }
 
 
