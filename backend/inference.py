@@ -295,8 +295,7 @@ def post_process_text(words_with_conf):
     return " ".join(corrected_words)
 
 def _run_inference_yolo_single(image: np.ndarray) -> dict:
-    processed = cv2.bilateralFilter(image, 9, 75, 75)
-    results = _yolo_model.predict(processed, augment=True, conf=0.35, verbose=False)[0]
+    results = _yolo_model(image, verbose=False)[0]
     boxes = results.boxes
     if boxes is None or len(boxes) == 0:
         return {'text': '', 'cells': [], 'dots_detected': 0, 'cells_detected': 0, 'confidence': 0.0, 'method': 'yolov8'}
@@ -305,7 +304,7 @@ def _run_inference_yolo_single(image: np.ndarray) -> dict:
     initial_boxes = []
     for i in range(len(boxes)):
         conf = float(boxes.conf[i].cpu().numpy())
-        if conf < 0.35:
+        if conf < 0.25:
             continue
             
         box = boxes.xyxy[i].cpu().numpy()
