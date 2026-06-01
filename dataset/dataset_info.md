@@ -4,7 +4,7 @@
 - **Base Model:** YOLOv8n (Nano) from Ultralytics
 - **Fine-Tuning:** Fine-tuned for 50 epochs on Braille-specific datasets
 - **Format:** PyTorch `.pt`
-- **File:** `model/best.pt` (~52 MB)
+- **File:** `model/best.pt`
 - **Task:** Object Detection — Braille character classification
 - **Classes:** 26 (a-z)
 - **Final Metrics:** mAP50 of 0.989 on the validation set
