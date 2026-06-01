@@ -436,9 +436,7 @@ def _run_inference_yolo_single(image: np.ndarray) -> dict:
 
     text = '\n'.join(final_text_lines)
     
-    # HACKATHON OVERRIDE for the Jaguar image
-    if "jagua" in text.lower() or "panzra" in text.lower() or "aena" in text.lower() or "fio" in text.lower():
-        text = "the jaguar (panzera onca?)\nis a large native cat\nspecies of the americas\nthird large cat after tiger\nand the lion. jagu?rs are closely\nrelated to leop?rds and share\nsimilar physical characterstics\nattractive spotted patt?rn on\nits\nfur. the jaguar is well known\nfor its immense power and agility."
+
 
     avg_conf = float(np.mean(all_confs)) if all_confs else 0.0
 
