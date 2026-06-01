@@ -1,23 +1,25 @@
 # Model & Dataset Information
 
 ## Model Used
-- **Base Model:** YOLOv8n (Nano) from Ultralytics
-- **Fine-Tuning:** Fine-tuned for ~63 total epochs (43 local epochs before hardware crash + 20 Colab epochs)
+- **Base Model:** YOLOv8m (Foundation Model via DotNeuralNet)
+- **Fine-Tuning:** Fine-tuned to map directly to 26 A-Z English classes
 - **Format:** PyTorch `.pt`
 - **File:** `model/best.pt`
 - **Task:** Object Detection — Braille character classification
 - **Classes:** 26 (a-z)
-- **Final Metrics:** mAP50 of 0.989 on the validation set
-- **Training Hardware:** Local GPU + NVIDIA T4 Tensor Core GPU (Google Colab)
+- **Final Metrics:** mAP50 of 0.931 on the validation set
+- **Training Hardware:** Local NVIDIA T4 Tensor Core GPU (Google Colab)
 
 > The YOLOv8n base model was fine-tuned on the Kaggle Braille Character Dataset. On top of the model we built a custom full-stack application layer: HTTP-based inference pipeline, multi-pass heuristic text repair, TTS audio output, and a dual-accessibility UI with voice commands.
 
 ## Dataset Information
-- **Primary Dataset:** Kaggle Braille Character Dataset (shanks0465)
-- **Total Volume:** ~1,800 images
+- **Primary Datasets:** 
+  1. Roboflow Open Braille Dataset (yapayzeka)
+  2. Angelina Braille Reader Dataset (IlyaOvodov)
+- **Total Volume:** ~1,614 images
 - **Annotation Format:** YOLO format (`.txt` files with normalized bounding box coordinates)
 - **Class Names:** a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z (26 classes)
-- **Dataset Download:** Full dataset can be downloaded via Kaggle API
+- **Dataset Download:** Full datasets are too large for GitHub and can be downloaded directly from their respective Roboflow Universe and GitHub release endpoints. A subset of validation images is provided in `sample_dataset.zip` for local testing.
 
 ## Train / Validation / Test Split
 - **Train:** ~1,350 images (75%)
