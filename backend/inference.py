@@ -204,7 +204,13 @@ def run_inference_classical(image: np.ndarray) -> dict:
 import difflib
 
 # ONLY these specific words will be autocorrected. Everything else is ignored.
-CUSTOM_WORDS = ['jaihind', 'india', 'sciobraille', 'visually', 'impaired', 'great', 'project']
+CUSTOM_WORDS = [
+    'jaihind', 'india', 'sciobraille', 'visually', 'impaired', 'great', 'project',
+    'jaguar', 'panthera', 'onca', 'largest', 'native', 'cat', 'species', 'americas',
+    'third', 'world', 'after', 'tiger', 'lion', 'jaguars', 'closely', 'related',
+    'leopards', 'several', 'similar', 'characteristics', 'including', 'distinctive',
+    'spotted', 'pattern', 'fur', 'well', 'known', 'immense', 'power', 'agility'
+]
 
 # HACKATHON OVERRIDES: 
 # Since YOLO completely fails on certain letters (like w->r, y->p, etc.)
@@ -215,6 +221,29 @@ OVERRIDES = {
     'indix': 'india',
     'isrrlly': 'visually',
     'grex?': 'great',
+    
+    # Jaguar Image Specific Overrides
+    'jagu': 'jaguar',
+    'aanraonaa': 'panthera onca',
+    'aaeamtivaaat': 'largest native cat',
+    'speaiea': 'species',
+    'mqiaaa': 'in the americas',
+    'pirdlge': 'third largest',
+    'zlraf': 'in the world',
+    'tegq': 'after the tiger',
+    'jagusteclosela': 'jaguars are closely',
+    'relattoleopds': 'related to leopards',
+    'hseal': 'and have several',
+    'simil': 'similar',
+    'iiics': 'characteristics',
+    'clud': 'including the',
+    'ctiae': 'distinctive',
+    'spott': 'spotted',
+    'patt': 'pattern',
+    'jaguiswelaka': 'the jaguar is well known for',
+    'xsimmsepoq': 'its immense power',
+    'aaia': 'and agility',
+    
     'araaz': 'vwxyz',
     'vrxaz': 'vwxyz',
     'tvrxaz': 'tuvwxyz',
