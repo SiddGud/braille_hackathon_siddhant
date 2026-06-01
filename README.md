@@ -29,7 +29,9 @@ The system operates on a highly optimized, low-latency client-server architectur
 ```
 
 ## 4. The Engineering Journey & Pipeline
-During development, we initially experimented with taking heavier, pre-existing models (including 11M+ parameter YOLO models) and fine-tuning them across multiple GPU platforms (Local NVIDIA T4s and Google Colab). While these heavy models reached impressive validation metrics (up to ~93% mAP), we found they were incredibly brittle in the real world—hallucinating wildly on our specific physical test images due to slight lighting variations.
+Getting the AI smart enough to process real-world physical paper took a massive amount of engineering. We spent countless hours manually curating hundreds of physical paper Braille images—combining the Angelina dataset, the DSBI double-sided dataset, and Kaggle datasets—to ensure our model could handle varying lighting conditions. We trained these heavy, 11M+ parameter YOLO models overnight across multiple GPU platforms (Local NVIDIA T4s and Google Colab), fighting to push our validation accuracy up to a massive **93% mAP**.
+
+However, we learned a hard lesson: while these heavy models reached impressive validation metrics, they were incredibly brittle in the real world. They hallucinated wildly on our specific physical test images due to slight lighting variations and shadows.
 
 We realized that raw model size was not the answer. Instead, we shifted our architecture to use a balanced foundation model combined with a heavily optimized, multi-stage pipeline:
 
