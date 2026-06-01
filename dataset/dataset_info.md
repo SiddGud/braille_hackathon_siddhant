@@ -1,23 +1,24 @@
 # Model & Dataset Information
 
 ## Model Used
-- **Type:** Pre-trained YOLOv8 Braille Detection Model
-- **Source:** Downloaded from Roboflow Universe (public pre-trained model)
+- **Model Name:** `yolov8_braille` (pre-trained)
+- **Source:** [DotNeuralNet — GitHub](https://github.com/snoop2head/DotNeuralNet)
 - **Format:** PyTorch `.pt`
 - **File:** `model/best.pt` (~52MB)
-- **Classes:** 26 Braille characters (a–z)
+- **Task:** Object Detection — Braille character classification (a–z)
+- **Classes:** 26 Braille characters
 
-> This project uses an existing publicly available pre-trained YOLOv8 model for Braille character detection.
-> The core contribution of this project is the **full-stack application layer** built on top of the model:
-> real-time WebRTC streaming, WebSocket-based inference pipeline, heuristic text repair algorithms, and TTS output.
+> This project integrates the publicly available pre-trained `yolov8_braille.pt` model from the DotNeuralNet open-source project.
+> The primary engineering contribution of **BrailleVision** is the full-stack application built on top:
+> real-time WebRTC camera streaming, WebSocket-based inference pipeline, multi-pass heuristic text repair, TTS audio output, and a dual-accessibility UI (visual dashboard + voice commands).
 
-## Dataset (Used by the Pre-trained Model)
+## Dataset (Used to train the pre-trained model)
 - **Dataset Source:** Roboflow Universe — Public Braille Detection Dataset
-- **Dataset Link:** `[INSERT ROBOFLOW PROJECT LINK — check where you downloaded the model from]`
-- **Annotation Format:** YOLO format
+- **Original Project:** [github.com/snoop2head/DotNeuralNet](https://github.com/snoop2head/DotNeuralNet)
+- **Annotation Format:** YOLO format (`.txt` files with normalized bounding box coordinates)
 - **Class Names:** `['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']`
+- **Total Classes:** 26
 
 ## Note on Training
-No custom training was performed. The pre-trained model was integrated as-is into the BrailleVision inference pipeline. All custom engineering work was done at the application layer.
-
-See `training/braille_train.ipynb` for a reference training notebook provided for reproducibility (shows how a similar model could be retrained from scratch using Roboflow data).
+No custom model training was performed. The pre-trained `yolov8_braille` model was integrated directly.
+See `training/braille_train.ipynb` for a reproducibility notebook showing how a similar model could be retrained from scratch.
