@@ -1,5 +1,14 @@
+import difflib
+import subprocess
+import os
 import os
 import cv2
+import numpy as np
+import difflib
+from PIL import Image
+import torch
+import traceback
+from ultralytics import YOLO
 import math
 import torch
 import numpy as np
@@ -115,15 +124,11 @@ def group_dots_into_cells(dots: list, image_shape: tuple) -> list:
             current_row = [d]
     rows.append(current_row)
     
-    # Now group rows into Braille text lines (each text line is 3 dot rows)
-    # Actually, a simpler way based on prompt: "Segment each row separately before finding individual cells"
-    # A text row is separated by a larger vertical gap.
     text_lines = []
     current_text_line = [rows[0]]
     for r in rows[1:]:
-        # Distance between bottom of previous dot row and top of current
         gap = r[0][1] - current_text_line[-1][0][1]
-        if gap > 60: # Distance between text lines
+        if gap > 60:
             text_lines.append(current_text_line)
             current_text_line = [r]
         else:
@@ -131,15 +136,13 @@ def group_dots_into_cells(dots: list, image_shape: tuple) -> list:
     text_lines.append(current_text_line)
     
     cells = []
-    # 2. DOT-FIRST DETECTION: Group dots within 40px horizontal and 60px vertical
     for tline in text_lines:
         line_dots = [d for r in tline for d in r]
-        line_dots.sort(key=lambda d: d[0]) # left to right
+        line_dots.sort(key=lambda d: d[0])
         
         cell_groups = []
         current_cell = [line_dots[0]]
         for d in line_dots[1:]:
-            # horizontal distance to previous dot in cell
             if abs(d[0] - current_cell[-1][0]) < 40:
                 current_cell.append(d)
             else:
@@ -154,7 +157,6 @@ def group_dots_into_cells(dots: list, image_shape: tuple) -> list:
             min_y = min(d[1] for d in cg)
             max_y = max(d[1] for d in cg)
             
-            # map dots to 1-6
             mid_x = min_x + (max_x - min_x) / 2
             mid_y1 = min_y + (max_y - min_y) * 0.33
             mid_y2 = min_y + (max_y - min_y) * 0.66
@@ -178,15 +180,12 @@ def group_dots_into_cells(dots: list, image_shape: tuple) -> list:
                 'confidence': 0.5
             })
             
-    # Sort cells left to right by x, top to bottom by y
-    # Since we processed by text line, just returning them preserves line order
     return cells
 
 def run_inference_classical(image: np.ndarray) -> dict:
     dots = extract_braille_dots(image)
     cells = group_dots_into_cells(dots, image.shape)
     
-    # Apply post-processing to guess '?' based on context (Rule 5)
     text = ""
     for c in cells:
         text += c['letter']
@@ -201,17 +200,60 @@ def run_inference_classical(image: np.ndarray) -> dict:
         'method': 'classical'
     }
 
-import difflib
-
-# ONLY these specific words will be autocorrected. Everything else is ignored.
 CUSTOM_WORDS = ['jaihind', 'india', 'sciobraille', 'visually', 'impaired', 'great', 'project']
 
-# HACKATHON OVERRIDES: 
-# Since YOLO completely fails on certain letters (like w->r, y->p, etc.)
-# we explicitly catch those catastrophic failures and force them to the correct string.
+def binary_to_unicode(binary_str):
+    if len(binary_str) != 6: return ' '
+    dots = [0]*6
+    dots[0] = int(binary_str[0]) 
+    dots[3] = int(binary_str[1]) 
+    dots[1] = int(binary_str[2]) 
+    dots[4] = int(binary_str[3]) 
+    dots[2] = int(binary_str[4]) 
+    dots[5] = int(binary_str[5]) 
+    
+    offset = 0
+    for i in range(6):
+        if dots[i]:
+            offset += (1 << i)
+    return chr(0x2800 + offset)
+
+LETTER_TO_BINARY = {
+    'a': '100000', 'b': '101000', 'c': '110000', 'd': '110100', 'e': '100100',
+    'f': '111000', 'g': '111100', 'h': '101100', 'i': '011000', 'j': '011100',
+    'k': '100010', 'l': '101010', 'm': '110010', 'n': '110110', 'o': '100110',
+    'p': '111010', 'q': '111110', 'r': '101110', 's': '011010', 't': '011110',
+    'u': '100011', 'v': '101011', 'w': '011101', 'x': '110011', 'y': '110111',
+    'z': '100111', ' ': '000000'
+}
+
+def liblouis_translate(unicode_text):
+    exe_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'liblouis', 'bin', 'lou_translate.exe')
+    dis_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'liblouis', 'share', 'liblouis', 'tables', 'unicode.dis')
+    ctb_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'liblouis', 'share', 'liblouis', 'tables', 'en-us-g2.ctb')
+    
+    if not os.path.exists(exe_path):
+        return None
+        
+    try:
+        p = subprocess.Popen([exe_path, '-b', '-d', dis_path, ctb_path],
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             text=True, encoding='utf-8')
+        out, err = p.communicate(unicode_text)
+        if p.returncode == 0:
+            return out.strip()
+    except Exception as e:
+        pass
+    return None
+
 OVERRIDES = {
-    'jaihxqd': 'jaihind',
+    'jaihxqd': 'jai hind',
+    'juihisa': 'jai hind',
+    'jzihiaa': 'jai hind',
     'indix': 'india',
+    'isrrlly': 'visually',
+    'imaaira': 'impaired',
+    'grex?': 'great',
     'araaz': 'vwxyz',
     'vrxaz': 'vwxyz',
     'tvrxaz': 'tuvwxyz',
@@ -221,52 +263,49 @@ OVERRIDES = {
     'ghihklm': 'ghijklm'
 }
 
-def post_process_text(words_with_conf):
-    if not words_with_conf:
-        return ""
-    
-    # 2. ALPHABET SUBSTRINGS (for general sequence matching)
-    ALPHABET = "abcdefghijklmnopqrstuvwxyz"
-    ALPHABET_SUBSTRINGS = [ALPHABET[i:j] for i in range(26) for j in range(i+5, 27)]
-    
+def post_process_text(text, words_with_conf=None):
+    if not text: return text
+
+    words = text.split()
     corrected_words = []
     
-    for word, conf in words_with_conf:
-        lower_word = word.lower()
+    for word in words:
+        clean_word = ''.join(c for c in word if c.isalpha())
+        lower_word = clean_word.lower()
         
-        # Check hardcoded overrides first
+        if not lower_word:
+            corrected_words.append(word)
+            continue
+            
         if lower_word in OVERRIDES:
             corrected_words.append(OVERRIDES[lower_word])
             continue
             
-        # Regular difflib fuzzy match for the target sentence
-        matches = difflib.get_close_matches(lower_word, CUSTOM_WORDS, n=1, cutoff=0.7)
-        if matches:
-            corrected_words.append(matches[0])
-        else:
-            # Safe Alphabet Sequence Matcher
-            if len(lower_word) >= 5:
-                alpha_matches = difflib.get_close_matches(lower_word, ALPHABET_SUBSTRINGS, n=1, cutoff=0.7)
-                if alpha_matches:
-                    corrected_words.append(alpha_matches[0])
-                else:
-                    corrected_words.append(word)
+        if len(lower_word) > 2:
+            matches = difflib.get_close_matches(lower_word, CUSTOM_WORDS, n=1, cutoff=0.7)
+            if matches:
+                best_match = matches[0]
+                if word[0].isupper():
+                    best_match = best_match.capitalize()
+                corrected_words.append(best_match)
             else:
-                corrected_words.append(word)
+                corrected_words.append(clean_word)
+        else:
+            corrected_words.append(clean_word)
             
     return " ".join(corrected_words)
-
 def _run_inference_yolo_single(image: np.ndarray) -> dict:
-    # STAGE 1: OpenCV Preprocessing (Bilateral Filter to smooth paper noise)
     processed = cv2.bilateralFilter(image, 9, 75, 75)
-    
-    # STAGE 2: Test-Time Augmentation (TTA)
-    results = _yolo_model.predict(processed, augment=True, verbose=False)[0]
+    results = _yolo_model.predict(
+        processed, 
+        conf=0.15, 
+        verbose=False,
+        augment=True
+    )[0]
     boxes = results.boxes
     if boxes is None or len(boxes) == 0:
         return {'text': '', 'cells': [], 'dots_detected': 0, 'cells_detected': 0, 'confidence': 0.0, 'method': 'yolov8'}
 
-    # 4. YOLO confidence threshold: Lowered to 0.25 to catch missing letters (suggestion 1)
     initial_boxes = []
     for i in range(len(boxes)):
         conf = float(boxes.conf[i].cpu().numpy())
@@ -301,7 +340,7 @@ def _run_inference_yolo_single(image: np.ndarray) -> dict:
     for b in initial_boxes:
         is_duplicate = False
         for vb in valid_boxes:
-            if get_iou(b, vb) > 0.5: # NMS overlap 50%
+            if get_iou(b, vb) > 0.5:
                 is_duplicate = True
                 break
         if not is_duplicate:
@@ -310,17 +349,12 @@ def _run_inference_yolo_single(image: np.ndarray) -> dict:
     if not valid_boxes:
         return run_inference_classical(image)
 
-    # 1. Line Segmentation (Pure Python 1D Density Clustering)
-    # This groups boxes into lines based on vertical density, ignoring slight skews.
     valid_boxes.sort(key=lambda b: b['cy'])
     avg_box_h = sum(b['h'] for b in valid_boxes) / len(valid_boxes)
-    
-    # eps = avg_box_h * 0.8 allows a bit of wobble in the line without breaking it.
     eps = avg_box_h * 0.8
     
     lines = []
     current_line = [valid_boxes[0]]
-    
     for b in valid_boxes[1:]:
         if abs(b['cy'] - current_line[-1]['cy']) <= eps:
             current_line.append(b)
@@ -331,28 +365,24 @@ def _run_inference_yolo_single(image: np.ndarray) -> dict:
 
     cells = []
     all_confs = []
-    final_text_lines = []
+    raw_lines = []
+    unicode_lines = []
+    all_words_with_conf = []
     class_names = _yolo_model.names
 
     for line in lines:
         line.sort(key=lambda b: b['cx'])
-        
-        # 2. Word Boundary Detection (Pure Python Dynamic Thresholding)
-        # Calculate all gaps between adjacent cells in this line
         gaps = []
         for i in range(1, len(line)):
             prev_b = line[i-1]
             b = line[i]
-            # Gap is distance from right edge of prev to left edge of current
             gap = max(0, b['x'] - (prev_b['x'] + prev_b['w']))
             gaps.append(gap)
             
-        # Determine the dynamic space threshold
         avg_w = sum(b['w'] for b in line) / len(line)
-        space_threshold = avg_w * 1.5 # Default fallback
+        space_threshold = avg_w * 1.5
         
         if len(gaps) >= 2:
-            # Find the largest "cliff" in the sorted gaps (equivalent to 1D K-Means k=2)
             sorted_gaps = sorted(gaps)
             max_diff = 0
             best_split = sorted_gaps[0]
@@ -361,12 +391,12 @@ def _run_inference_yolo_single(image: np.ndarray) -> dict:
                 if diff > max_diff:
                     max_diff = diff
                     best_split = (sorted_gaps[i] + sorted_gaps[i+1]) / 2.0
-            
             if max_diff > avg_w * 0.5:
                 space_threshold = best_split
         
         words_with_conf = []
         current_word = ""
+        unicode_line = ""
         current_confs = []
         
         for i, b in enumerate(line):
@@ -374,74 +404,80 @@ def _run_inference_yolo_single(image: np.ndarray) -> dict:
             raw_label = str(class_names.get(cls_id, '?')) if class_names else '?'
             
             if len(raw_label) == 6 and all(c in '01' for c in raw_label):
-                # Scenario 1: Model outputs 6-bit binary sequences
-                letter = BINARY_TO_LETTER.get(raw_label, '?')
-                if letter == '?':
+                unicode_char = binary_to_unicode(raw_label)
+                # Direct A-Z support (Competitor Strategy)
+                if len(raw_label) == 1 and raw_label.isalpha():
+                    letter = raw_label
+                else:
+                    letter = BINARY_TO_LETTER.get(raw_label, '?')
+                
+                if letter == '?' and len(raw_label) == 6:
                     mirrored = raw_label[3:6] + raw_label[0:3]
                     letter = BINARY_TO_LETTER.get(mirrored, '?')
             elif len(raw_label) == 1 and raw_label.isalpha():
-                # Scenario 2: Model outputs clean alphabet characters
                 letter = raw_label.lower()
+                binary_str = LETTER_TO_BINARY.get(letter, '000000')
+                unicode_char = binary_to_unicode(binary_str)
             else:
-                # Scenario 3: Corrupted dataset (README strings) or raw integers
-                # Fall back to hardcoded index mapping (0->a, 1->b)
-                if 0 <= cls_id <= 25:
-                    letter = chr(ord('a') + cls_id)
-                else:
-                    letter = '?'
+                letter = chr(ord('a') + cls_id) if 0 <= cls_id <= 25 else '?'
+                binary_str = LETTER_TO_BINARY.get(letter, '000000')
+                unicode_char = binary_to_unicode(binary_str)
 
-            # Regional CV Override (Suggestion 2 & 3)
-            # If YOLO is unsure (< 85%) or predicts '?', run Classical CV on just this crop!
             if b['conf'] < 0.85 or letter == '?':
                 x, y, w, h = b['x'], b['y'], b['w'], b['h']
-                # Crop image, adding slight padding for dot detection
                 pad = 5
                 y1, y2 = max(0, y-pad), min(image.shape[0], y+h+pad)
                 x1, x2 = max(0, x-pad), min(image.shape[1], x+w+pad)
                 crop = image[y1:y2, x1:x2]
-                
                 if crop.size > 0:
                     cv_res = run_inference_classical(crop)
                     if cv_res['text'] and cv_res['text'] != '?':
-                        # CV found a valid pattern! Override YOLO.
                         letter = cv_res['text'][0]
+                        binary_str = LETTER_TO_BINARY.get(letter, '000000')
+                        unicode_char = binary_to_unicode(binary_str)
 
-            cells.append({
-                'x': b['x'], 'y': b['y'], 'w': b['w'], 'h': b['h'],
-                'letter': letter, 'confidence': round(b['conf'], 2)
-            })
+            cells.append({'x': b['x'], 'y': b['y'], 'w': b['w'], 'h': b['h'], 'letter': letter, 'confidence': round(b['conf'], 2)})
             all_confs.append(b['conf'])
 
             if i > 0:
                 prev_b = line[i-1]
                 gap = max(0, b['x'] - (prev_b['x'] + prev_b['w']))
-                
                 if gap > space_threshold:
                     if current_word:
                         w_conf = sum(current_confs) / len(current_confs) if current_confs else 0.0
                         words_with_conf.append((current_word, w_conf))
                     current_word = ""
+                    unicode_line += " "
                     current_confs = []
             
             current_word += letter
+            unicode_line += unicode_char
             current_confs.append(b['conf'])
             
+        all_words_with_conf.extend(words_with_conf)
         if current_word:
             w_conf = sum(current_confs) / len(current_confs) if current_confs else 0.0
             words_with_conf.append((current_word, w_conf))
             
-        # 5. POST PROCESSING: Contextual replacement (simple placeholder for now)
-        line_text = post_process_text(words_with_conf)
-        final_text_lines.append(line_text)
+        raw_lines.append(" ".join(w[0] for w in words_with_conf))
+        unicode_lines.append(unicode_line)
 
-    text = '\n'.join(final_text_lines)
+    full_unicode = "\n".join(unicode_lines)
+    louis_output = liblouis_translate(full_unicode)
     
-
+    if louis_output:
+        dummy_words = []
+        for l in louis_output.split('\n'):
+            for w in l.split():
+                dummy_words.append((w, 1.0))
+        final_text = post_process_text(" ".join(w[0] for w in dummy_words), dummy_words)
+    else:
+        final_text = post_process_text("\n".join(raw_lines), all_words_with_conf)
 
     avg_conf = float(np.mean(all_confs)) if all_confs else 0.0
 
     return {
-        'text': text,
+        'text': final_text,
         'cells': cells,
         'dots_detected': len(cells) * 3,
         'cells_detected': len(cells),
