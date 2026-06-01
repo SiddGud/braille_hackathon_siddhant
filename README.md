@@ -1,39 +1,138 @@
-# BrailleVision
-**AI-powered Braille recognition for an inclusive world.**
+# BrailleVision 👁️
+**AI-powered real-time Braille recognition for an inclusive world.**
 
-BrailleVision is a real-time computer vision application that detects physical Braille text via a webcam or image upload, mathematically repairs OCR anomalies, and translates the text into spoken audio using on-device TTS. 
+BrailleVision is a full-stack computer vision web application that detects physical Braille text via a live webcam stream or image upload, repairs OCR anomalies using a fuzzy-matching heuristic pipeline, and converts the decoded text to spoken audio using on-device TTS.
 
-It is designed with **dual-accessibility**: Sighted users can navigate the sleek interactive dashboard, while visually impaired users can seamlessly operate the entire system using voice commands.
-
-## ⚠️ CRITICAL: How to Capture Braille Images
-
-Because computer vision relies heavily on shadow mapping to detect physical bumps, **you must capture the photos correctly** for the YOLOv8 model to work. 
-
-If your model is returning garbage text, it is because your lighting is wrong! Follow these two golden rules (similar to the reference images shared in our WhatsApp group):
-
-### 1. Use the BACK of the paper
-This specific YOLOv8 model was trained to recognize the mirrored crater patterns from the **back** of punched Braille paper. 
-- Do **NOT** scan the raised bumps on the front of the paper. 
-- Flip the paper over so the dots appear as indented holes/craters.
-
-### 2. Shine a flashlight from the Bottom-Left
-Braille AI cannot see dots; it sees the *shadows* cast by the dots.
-- Do **NOT** use overhead lighting (like a ceiling lamp directly above the paper). Overhead lighting casts shadows at the bottom of the dots, which blinds the model.
-- Lay the paper flat on a table. 
-- Hold a phone flashlight at a low angle from the **bottom-left corner**, shining diagonally across the page. This casts the shadows on the top-right inner walls of the craters, which is exactly the lighting environment the model was trained on!
-
-## Tech Stack
-- **AI/ML:** YOLOv8 Nano, OpenCV, CLAHE Preprocessing
-- **Backend:** Python, FastAPI, WebSockets
-- **Frontend:** HTML5, Vanilla JavaScript, WebRTC (Live Camera)
-- **Audio:** Web Speech API TTS
-
-## How It Works
-1. **Camera Capture:** High-resolution 1280x720 live feed captured via WebRTC, streamed as base64 frames over WebSocket at 2 FPS.
-2. **Preprocessing:** OpenCV CLAHE enhances contrast and adaptive thresholding isolates Braille dots.
-3. **AI Detection:** YOLOv8 nano model detects and classifies individual Braille cells with sub-100ms inference time on CPU.
-4. **Heuristic Repair:** The backend runs a mathematical fuzzy-matching algorithm and sequence heuristic to automatically repair catastrophic OCR failures (like misinterpreting 'w' as 'r').
-5. **Speech Output:** Decoded characters are assembled into words and converted to natural speech.
+> **Submission for: BrailleVision Hackathon 2026**
+> Built with ❤️ — Empowering Independence
 
 ---
-*Built with ❤️ for Empowering Independence*
+
+## 📁 Repository Structure
+
+```
+braille_hackathon_siddhant/
+├── README.md
+├── requirements.txt
+├── setup_instructions.md
+├── ai_tools_disclosure.md
+│
+├── frontend/
+│   ├── index.html          # Main UI (single-page app)
+│   ├── temp.js             # All JS logic (WebRTC, WebSocket, TTS)
+│   └── logo.png            # App logo
+│
+├── backend/
+│   ├── app.py              # FastAPI server + WebSocket handler
+│   └── inference.py        # YOLO inference + heuristic text repair
+│
+├── model/
+│   ├── best.pt             # Trained YOLO weights (52MB)
+│   └── model_info.md       # Architecture and load instructions
+│
+├── training/
+│   ├── yolo_train_command.txt    # Exact training command used
+│   ├── training_logs/            # Training logs (add your screenshots here)
+│   └── results/                  # Confusion matrix, mAP curves (add here)
+│
+├── dataset/
+│   ├── data.yaml                 # YOLO dataset configuration
+│   ├── dataset_info.md           # Full dataset details and links
+│   ├── sample_images/            # Place sample dataset images here
+│   └── sample_annotations/       # Place sample label .txt files here
+│
+├── sample_inputs/                # Test Braille images for judges to run inference
+├── sample_outputs/               # Expected outputs for the sample inputs
+│
+└── demo/
+    ├── demo_video_link.txt       # Link to the demo video
+    └── screenshots/              # Screenshots of the running app
+```
+
+---
+
+## ⚡ Quick Start (For Judges)
+
+### 1. Clone & Install
+```bash
+git clone https://github.com/SiddGud/braille_hackathon_siddhant.git
+cd braille_hackathon_siddhant
+pip install -r requirements.txt
+```
+
+### 2. Run the Backend
+```bash
+python backend/app.py
+# Backend starts on http://localhost:8000
+```
+
+### 3. Open the Frontend
+Open `frontend/index.html` in your browser (or serve with `python -m http.server 3000` from the `frontend/` folder).
+
+### 4. Run Inference on a Sample Image
+```bash
+python inference/inference.py --source sample_inputs/test_braille.jpg --weights model/best.pt
+```
+
+---
+
+## ⚠️ CRITICAL: Image Input Requirements
+
+BrailleVision uses shadow-based computer vision. The quality of the input photo directly determines accuracy.
+
+### Rule 1: Use the BACK of the paper
+The model was trained on **indented craters** (the back side of punched Braille paper).
+- ✅ **DO:** Flip the paper so dots appear as small indented holes.
+- ❌ **DON'T:** Use the front side with raised bumps.
+
+### Rule 2: Directional Side Lighting
+- ✅ **DO:** Shine a phone flashlight at a **low angle from the bottom-left corner** of the paper.
+- ❌ **DON'T:** Use overhead room lighting or a ceiling lamp — it destroys all shadows.
+
+---
+
+## 🧠 How BrailleVision Works
+
+| Step | Component | Description |
+|------|-----------|-------------|
+| 1 | WebRTC Capture | 1280×720 live video streamed as base64 over WebSocket at 2 FPS |
+| 2 | Preprocessing | OpenCV CLAHE contrast enhancement |
+| 3 | AI Detection | YOLOv8-nano classifies 26 Braille character classes |
+| 4 | Text Repair | Fuzzy-match heuristic engine corrects catastrophic YOLO misclassifications |
+| 5 | TTS Output | Decoded words spoken aloud via Web Speech API |
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| ML Model | YOLOv8 Nano (Ultralytics) |
+| CV Pipeline | OpenCV, CLAHE |
+| Backend | Python, FastAPI, WebSockets |
+| Frontend | HTML5, Vanilla JS, WebRTC |
+| Audio | Web Speech API (on-device TTS) |
+
+---
+
+## 📦 Model Access
+
+The trained weights are included directly in this repository at `model/best.pt` (52MB).
+
+For additional verification, see `model/model_info.md`.
+
+---
+
+## 📊 Dataset
+
+Full dataset details are in `dataset/dataset_info.md`.
+
+---
+
+## 🤖 AI Tools Disclosure
+
+See `ai_tools_disclosure.md` for a full list of AI tools used during development.
+
+---
+
+*© 2025 BrailleVision · Empowering Independence*

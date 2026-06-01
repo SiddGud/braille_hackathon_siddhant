@@ -1,19 +1,49 @@
-# Hackathon Setup Instructions
+# Setup Instructions
 
-**IMPORTANT FOR JUDGES:** 
-Please run this project using **standard Python 3.10+ from python.org** on Windows, Mac, or Linux. 
-Do **NOT** use MSYS2 or MinGW Python, as PyTorch does not provide pre-compiled binary wheels for those environments, which will cause installation failures during the evaluation.
+Follow these instructions to run the BrailleVision project locally. The project requires Python 3.10+ and Node.js (for serving the frontend, or you can just open the HTML file directly).
 
-## Quick Start (Windows)
-Simply double-click `start.bat`. It will automatically:
-1. Create a virtual environment using `py -3.10`
-2. Install the correct CPU-only PyTorch wheels and Ultralytics
-3. Start the backend server and open the frontend UI
-
-## Manual Setup (Mac/Linux)
-If you are evaluating on Mac or Linux, please run:
+### 1. Clone the Repository
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r backend/requirements.txt
+git clone https://github.com/SiddGud/braille_hackathon_siddhant.git
+cd braille_hackathon_siddhant
 ```
+
+### 2. Backend Setup
+The backend runs on Python via FastAPI and Ultralytics YOLOv8.
+
+```bash
+# Optional: Create a virtual environment
+python -m venv venv
+# Windows: venv\Scripts\activate
+# Mac/Linux: source venv/bin/activate
+
+# Install all dependencies
+pip install -r requirements.txt
+
+# Start the Backend Server (Runs on port 8000)
+python backend/app.py
+```
+*Note: The backend will automatically load the YOLO weights from `model/best.pt`.*
+
+### 3. Frontend Setup
+The frontend consists of vanilla HTML, CSS, and JS. It requires no complex build tools.
+
+**Option A (Recommended):**
+Simply double-click `frontend/index.html` to open it in your browser.
+
+**Option B (Local Web Server):**
+If you prefer to run it via a local server to avoid CORS issues:
+```bash
+# Using Python
+cd frontend
+python -m http.server 3000
+# Then open http://localhost:3000 in your browser
+```
+
+### 4. How to Test Inference
+1. Make sure the backend server is running (`python backend/app.py`).
+2. Open `frontend/index.html` in your browser.
+3. Click **Live Stream** to use your webcam, or **Upload Image** to test a pre-captured photo.
+4. If testing via upload, you can use the sample images located in the `sample_inputs/` folder.
+
+**Mandatory Lighting Note:** When testing physical Braille, please ensure the paper is laid flat, face down (so dots are indented), and a flashlight is pointed from the bottom-left corner across the page. This accurately recreates the shadow conditions the model was trained on.

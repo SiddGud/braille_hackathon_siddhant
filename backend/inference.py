@@ -18,7 +18,7 @@ BINARY_TO_LETTER = {
 
 def load_model():
     global _yolo_model
-    model_path = os.path.join(os.path.dirname(__file__), 'models', 'best.pt')
+    model_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'model', 'best.pt')
     if os.path.exists(model_path):
         try:
             _yolo_model = YOLO(model_path)
