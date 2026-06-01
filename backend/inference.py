@@ -204,22 +204,24 @@ def run_inference_classical(image: np.ndarray) -> dict:
 import difflib
 
 # ONLY these specific words will be autocorrected. Everything else is ignored.
-CUSTOM_WORDS = ['jaihind', 'india', 'sciobraille', 'visually', 'impaired', 'great', 'project']
+# CUSTOM_WORDS = ['jaihind', 'india', 'sciobraille', 'visually', 'impaired', 'great', 'project']
+CUSTOM_WORDS = []
 
 # HACKATHON OVERRIDES: 
 # Since YOLO completely fails on certain letters (like w->r, y->p, etc.)
 # we explicitly catch those catastrophic failures and force them to the correct string.
-OVERRIDES = {
-    'jaihxqd': 'jaihind',
-    'indix': 'india',
-    'araaz': 'vwxyz',
-    'vrxaz': 'vwxyz',
-    'tvrxaz': 'tuvwxyz',
-    'tuvrxp?': 'tuvwxyz',
-    'tuvrxp': 'tuvwxyz',
-    'tuvrxpz': 'tuvwxyz',
-    'ghihklm': 'ghijklm'
-}
+# OVERRIDES = {
+#     'jaihxqd': 'jaihind',
+#     'indix': 'india',
+#     'araaz': 'vwxyz',
+#     'vrxaz': 'vwxyz',
+#     'tvrxaz': 'tuvwxyz',
+#     'tuvrxp?': 'tuvwxyz',
+#     'tuvrxp': 'tuvwxyz',
+#     'tuvrxpz': 'tuvwxyz',
+#     'ghihklm': 'ghijklm'
+# }
+OVERRIDES = {}
 
 def post_process_text(words_with_conf):
     if not words_with_conf:
