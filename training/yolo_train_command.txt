@@ -1,9 +1,11 @@
-# YOLO Training Command Used
+# Model Training Information
 
-## Command
-```bash
-yolo task=detect mode=train model=yolov8n.pt data=dataset/data.yaml epochs=100 imgsz=640 batch=16 name=braillevision_run
-```
+> **IMPORTANT:** This project uses a **pre-trained YOLOv8 Braille Detection model** downloaded from Roboflow Universe.
+> No custom training was performed during the hackathon. The training notebook (`braille_train.ipynb`) is provided
+> to show how a similar model can be reproduced from scratch if needed.
+>
+> The primary engineering contribution of this submission is the full-stack application:
+> real-time WebSocket inference, heuristic text repair, voice commands, and the TTS pipeline.
 
 ## Hyperparameters
 - **Base Model:** yolov8n.pt (YOLOv8 Nano)
