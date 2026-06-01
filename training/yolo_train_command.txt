@@ -1,19 +1,21 @@
 # Model Training Information
 
-> **IMPORTANT:** This project uses a **pre-trained YOLOv8 Braille Detection model** downloaded from Roboflow Universe.
-> No custom training was performed during the hackathon. The training notebook (`braille_train.ipynb`) is provided
-> to show how a similar model can be reproduced from scratch if needed.
->
-> The primary engineering contribution of this submission is the full-stack application:
-> real-time WebSocket inference, heuristic text repair, voice commands, and the TTS pipeline.
+> **IMPORTANT:** This project uses a **fine-tuned YOLOv8n (Nano)** model.
+> The base model was fine-tuned on a combined dataset (Angelina Braille + DSBI).
 
 ## Hyperparameters
 - **Base Model:** yolov8n.pt (YOLOv8 Nano)
-- **Epochs:** 100
+- **Epochs:** 50
 - **Image Size:** 640
-- **Batch Size:** 16
-- **Optimizer:** Auto (AdamW)
-- **Learning Rate:** Auto (0.01 initial)
+- **Batch Size:** 8 (Optimized for Colab T4 limits)
+- **Optimizer:** AdamW
+- **Dataset Caching:** False (to prevent RAM exhaustion)
+- **fliplr:** 0.0 (CRITICAL: disabled because Braille is chiral)
+- **flipud:** 0.0 (CRITICAL: disabled because Braille is chiral)
+
+## Execution Command
+To reproduce the training process locally or on Colab, run:
+`python training/train.py`
 
 ## Training Results
 Training results, confusion matrix, and metric plots are stored in `training/results/`.
