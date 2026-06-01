@@ -510,8 +510,7 @@ def run_inference(image: np.ndarray) -> dict:
     if image is None or image.size == 0:
         return {'text': '', 'cells': [], 'dots_detected': 0, 'cells_detected': 0, 'confidence': 0.0, 'method': 'none'}
 
-    if _yolo_model is not None:
-        return run_inference_yolo(image)
+    # Use the Global Dot Mesh (Pure Math) approach instead of YOLO
     return run_inference_classical(image)
 
 def draw_results(image: np.ndarray, result: dict) -> np.ndarray:
