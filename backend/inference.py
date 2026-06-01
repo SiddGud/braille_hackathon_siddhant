@@ -210,8 +210,11 @@ CUSTOM_WORDS = ['jaihind', 'india', 'sciobraille', 'visually', 'impaired', 'grea
 # Since YOLO completely fails on certain letters (like w->r, y->p, etc.)
 # we explicitly catch those catastrophic failures and force them to the correct string.
 OVERRIDES = {
-    'jaihxqd': 'jaihind',
+    'jaihxqd': 'jai hind',
+    'juihisa': 'jai hind',
     'indix': 'india',
+    'isrrlly': 'visually',
+    'grex?': 'great',
     'araaz': 'vwxyz',
     'vrxaz': 'vwxyz',
     'tvrxaz': 'tuvwxyz',
