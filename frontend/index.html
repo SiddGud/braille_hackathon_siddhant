@@ -8,24 +8,43 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
+    
+    /* ============================================================
+       TAB SLIDER
+    ============================================================ */
+    .tab-slider-container {
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    .tab-slider {
+      display: flex;
+      width: 200%;
+      transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .slide-pane {
+      width: 50%;
+      flex-shrink: 0;
+    }
+
     /* ============================================================
        RESET & BASE
     ============================================================ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:        #0A0A0F;
-      --bg2:       #0F0F1A;
-      --bg3:       #13131F;
-      --violet:    #7C3AED;
-      --violet-l:  #9D5AF5;
-      --violet-d:  #5B21B6;
-      --cyan:      #06B6D4;
-      --cyan-l:    #22D3EE;
-      --emerald:   #10B981;
-      --rose:      #F43F5E;
-      --amber:     #F59E0B;
+      --bg:        #000000;
+      --bg2:       #111111;
+      --bg3:       #222222;
+      --violet:    #FFD700; /* Primary Yellow */
+      --violet-l:  #FFEA00;
+      --violet-d:  #B39700;
+      --cyan:      #FFFFFF; /* Secondary White */
+      --cyan-l:    #DDDDDD;
+      --emerald:   #00FF00; /* Bright Green */
+      --rose:      #FF0000; /* Bright Red */
+      --amber:     #FFD700;
       --white:     #FFFFFF;
-      --muted:     rgba(255,255,255,0.45);
+      --muted:     #AAAAAA;
       --glass:     rgba(255,255,255,0.05);
       --glass-h:   rgba(255,255,255,0.08);
       --border:    rgba(255,255,255,0.10);
@@ -374,6 +393,22 @@
       border-top: 1px solid var(--border);
       background: rgba(0,0,0,0.15);
     }
+    .detected-text-box {
+      min-height: 80px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--white);
+      margin-bottom: 16px;
+      font-family: 'Courier New', monospace;
+      word-break: normal;
+      white-space: pre-wrap;
+      position: relative;
+    }
     .btn {
       display: inline-flex;
       align-items: center;
@@ -390,11 +425,11 @@
     }
     .btn:active { transform: scale(0.97); }
     .btn-primary {
-      background: linear-gradient(135deg, var(--violet), var(--violet-d));
-      color: #fff;
-      box-shadow: 0 0 24px rgba(124,58,237,0.4);
+      background: linear-gradient(135deg, #FFD700, #FFC107);
+      color: #000;
+      box-shadow: 0 0 24px rgba(255,215,0,0.4);
     }
-    .btn-primary:hover { box-shadow: 0 0 36px rgba(124,58,237,0.6); filter: brightness(1.1); }
+    .btn-primary:hover { box-shadow: 0 0 36px rgba(255,215,0,0.6); filter: brightness(1.1); }
     .btn-secondary {
       background: var(--glass);
       color: var(--white);
@@ -619,7 +654,7 @@
       color: var(--white);
       margin-bottom: 16px;
       font-family: 'Courier New', monospace;
-      word-break: break-all;
+      word-break: normal; white-space: pre-wrap;
       position: relative;
     }
     .cursor-blink {
@@ -1116,16 +1151,15 @@
   <div class="container">
     <div class="header-inner">
       <div class="logo-wrap">
-        <div class="logo-icon">️</div>
+        <div class="logo-icon"><img src="logo.png" style="width:100%;height:100%;border-radius:10px;object-fit:cover;"></div>
         <div>
           <div class="logo-text grad-text">BrailleVision</div>
           <div class="logo-tag">AI Braille Recognition</div>
         </div>
       </div>
       <nav>
-        <a href="#camera-section">Detect</a>
-        <a href="#how-it-works">How It Works</a>
-        <a href="#braille-ref">Reference</a>
+        <a href="#" onclick="event.preventDefault(); document.getElementById('main-slider').style.transform = 'translateX(0%)'">Detect</a>
+        <a href="#" onclick="event.preventDefault(); document.getElementById('main-slider').style.transform = 'translateX(-50%)'">How It Works</a>
       </nav>
       <div class="header-right">
         <div class="status-pill" id="status-pill">
@@ -1143,19 +1177,23 @@
 <section class="hero">
   <div class="container">
     <div class="hero-badge">
-      <span>✨</span>
-      <span>Hackathon 2025 — AI for Accessibility</span>
+      <span>🎤</span>
+      <span>Voice Tutorial Available — Say "Tutorial"</span>
     </div>
     <h1 class="hero-title">
       Read Braille with<br/><span class="grad-text">Artificial Intelligence</span>
     </h1>
-    <p class="hero-sub">Point your camera at any Braille text and BrailleVision will instantly decode it into spoken words using YOLOv8 and computer vision.</p>
+    <p class="hero-sub">Sighted users can navigate using the interactive dashboard below, while visually challenged users can operate the entire system via voice commands.</p>
   </div>
 </section>
 
 <!-- ============================================================
      MAIN GRID
 ============================================================ -->
+
+<div class="tab-slider-container">
+  <div class="tab-slider" id="main-slider">
+    <div class="slide-pane">
 <section id="camera-section">
   <div class="container">
     <div class="main-grid">
@@ -1171,11 +1209,10 @@
 
         <!-- ── LIVE TAB ── -->
         <div class="tab-panel active" id="tab-live">
-          <div class="video-wrap">
-            <video id="live-video" autoplay muted playsinline></video>
-            <canvas id="overlay-canvas"></canvas>
-            <div class="video-glow"></div>
-            <div class="cam-placeholder" id="cam-placeholder">
+            <div class="video-wrap">
+              <video id="live-video" autoplay muted playsinline></video>
+              <canvas id="overlay-canvas"></canvas>
+              <div class="cam-placeholder" id="cam-placeholder">
               <div class="cam-placeholder-icon"></div>
               <p>Click <strong>Start Camera</strong> to begin</p>
             </div>
@@ -1277,8 +1314,8 @@
             <button class="btn btn-primary btn-sm" id="btn-speak" title="Speak detected text">
                Speak
             </button>
-            <button class="btn-icon btn-sm" id="btn-copy" title="Copy to clipboard"></button>
-            <button class="btn-icon btn-sm" id="btn-download" title="Download as TXT"></button>
+            <button class="btn-icon btn-sm" id="btn-copy" title="Copy to clipboard">Copy</button>
+            <button class="btn-icon btn-sm" id="btn-download" title="Download as TXT">Download</button>
             <div class="audio-wave hidden" id="audio-wave">
               <span></span><span></span><span></span><span></span><span></span>
             </div>
@@ -1327,9 +1364,9 @@
         <div class="stat-label">Characters Decoded</div>
       </div>
       <div class="stat-card glass">
-        <span class="stat-icon">⚡</span>
-        <div class="stat-value" id="stat-sessions">1</div>
-        <div class="stat-label">Active Session</div>
+        <span class="stat-icon">📝</span>
+        <div class="stat-value" id="stat-lines">0</div>
+        <div class="stat-label">Lines Detected</div>
       </div>
     </div>
   </div>
@@ -1338,6 +1375,9 @@
 <!-- ============================================================
      HOW IT WORKS
 ============================================================ -->
+
+    </div>
+    <div class="slide-pane">
 <section class="section" id="how-it-works">
   <div class="container">
     <div class="section-header">
@@ -1393,18 +1433,22 @@
 <!-- ============================================================
      FOOTER
 ============================================================ -->
+
+    </div>
+  </div>
+</div>
 <footer>
   <div class="container">
     <div class="footer-inner">
       <div class="footer-brand">
         <div class="logo-wrap">
-          <div class="logo-icon">️</div>
+          <div class="logo-icon"><img src="logo.png" style="width:100%;height:100%;border-radius:10px;object-fit:cover;"></div>
           <div>
             <div class="logo-text grad-text">BrailleVision</div>
           </div>
         </div>
         <p style="margin-top:8px">AI-powered Braille recognition for an inclusive world.</p>
-        <p style="margin-top:4px">Built with ❤️ for <strong>AI Accessibility Hackathon 2025</strong></p>
+        <p style="margin-top:4px">Built with ❤️ for <strong>the Global Accessibility Community</strong></p>
       </div>
       <div>
         <p style="font-size:12px;color:var(--muted);margin-bottom:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Tech Stack</p>
@@ -1420,7 +1464,7 @@
         </div>
       </div>
     </div>
-    <div class="footer-copy">© 2025 BrailleVision Team · All rights reserved · Made at Hackathon 2025</div>
+    <div class="footer-copy">© 2025 BrailleVision · Empowering Independence</div>
   </div>
 </footer>
 
@@ -1453,7 +1497,7 @@ const state = {
   fpsLast: performance.now(),
   fpsVal: 0,
   detectionHistory: [],
-  stats: { detections: 0, confSum: 0, chars: 0 },
+  stats: { detections: 0, confSum: 0, chars: 0, lines: 0 },
   currentText: '',
   currentConf: 0,
   currentMethod: '',
@@ -1524,7 +1568,7 @@ const dom = {
   statDetections: $('stat-detections'),
   statAvgConf:    $('stat-avg-conf'),
   statChars:      $('stat-chars'),
-  statSessions:   $('stat-sessions'),
+  statLines:      $('stat-lines'),
   ttsAudio:       $('tts-audio'),
   toastContainer: $('toast-container'),
 };
@@ -1869,20 +1913,7 @@ function handleDetectionResult(data) {
 }
 
 function updateDetectedText(text) {
-  clearTimeout(state.typewriterTimer);
-  dom.detectedTextBox.innerHTML = '';
-  const cursor = document.createElement('span');
-  cursor.className = 'cursor-blink';
-  let i = 0;
-  function type() {
-    if (i < text.length) {
-      dom.detectedTextBox.insertBefore(document.createTextNode(text[i]), cursor);
-      i++;
-      state.typewriterTimer = setTimeout(type, 60);
-    }
-  }
-  dom.detectedTextBox.appendChild(cursor);
-  type();
+  dom.detectedTextBox.textContent = text;
 }
 
 function updateConfidence(conf, method) {
@@ -2021,6 +2052,11 @@ dom.btnDetectUpload.addEventListener('click', async () => {
     }
     dom.uploadStatusTxt.textContent = '✅ Detection complete';
     showToast('Braille detected successfully!', 'success');
+    
+    // Auto-speak the result!
+    if (data.text) {
+      speakText(data.text);
+    }
   } catch (e) {
     dom.uploadStatusTxt.textContent = '❌ ' + e.message;
     showToast(e.message, 'error');
@@ -2264,6 +2300,74 @@ console.log(
   'background: linear-gradient(135deg, #7C3AED, #06B6D4); color: white; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: bold;',
   '\nAPI:', API_BASE, '\nWS:', WS_URL
 );
-</script>
-</body>
-</html>
+
+/* ================================================================
+   ACCESSIBILITY: SEMANTIC VOICE COMMANDS
+================================================================ */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SpeechRecognition) {
+  const recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+
+  // UI indicator
+  const voiceIndicator = document.createElement('div');
+  voiceIndicator.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#FFD700; color:#000; padding:12px 24px; border-radius:30px; font-weight:bold; font-size:16px; z-index:9999; box-shadow: 0 0 20px rgba(255,215,0,0.5); border: 2px solid #000; display:flex; align-items:center; gap:8px; cursor:pointer;';
+  voiceIndicator.innerHTML = '<span style="font-size:20px">🎤</span> Voice Commands: Listening';
+  document.body.appendChild(voiceIndicator);
+
+  // Add Tutorial Audio Button to Top Nav
+  const topNav = document.querySelector('.top-nav');
+  if(topNav) {
+      const tutBtn = document.createElement('button');
+      tutBtn.className = 'btn btn-primary';
+      tutBtn.innerHTML = '🔊 Play Tutorial';
+      tutBtn.style.marginRight = 'auto';
+      tutBtn.onclick = () => speakText("Welcome to Braille Vision. Say 'Start Scan' to open your camera and read braille documents. Say 'Stop Scan' to close the camera. The system will automatically read detected text out loud.");
+      topNav.insertBefore(tutBtn, topNav.firstChild);
+  }
+
+  recognition.onresult = (event) => {
+    const lastResult = event.results[event.results.length - 1];
+    const command = lastResult[0].transcript.trim().toLowerCase();
+    
+    // Flash indicator
+    voiceIndicator.style.background = '#FFFFFF';
+    setTimeout(() => voiceIndicator.style.background = '#FFD700', 300);
+
+    if (command.includes('start scan') || command.includes('open camera')) {
+      showToast('Voice Command: Starting camera...', 'success');
+      const liveTab = document.querySelector('.cam-tab[data-tab="live"]');
+      if (liveTab) liveTab.click();
+      startCamera();
+    } 
+    else if (command.includes('stop scan') || command.includes('close camera')) {
+      showToast('Voice Command: Stopping camera...', 'success');
+      stopCamera();
+    }
+    else if (command.includes('tutorial') || command.includes('help')) {
+      showToast('Voice Command: Playing tutorial...', 'success');
+      speakText("Welcome to Braille Vision. Say 'Start Scan' to open your camera and read braille documents. Say 'Stop Scan' to close the camera. The system will automatically read detected text out loud.");
+    }
+    else if (command.includes('upload') || command.includes('browse')) {
+      showToast('Voice Command: Opening file browser...', 'success');
+      const uploadTab = document.querySelector('.cam-tab[data-tab="upload"]');
+      if (uploadTab) uploadTab.click();
+      if (dom.uploadInput) dom.uploadInput.click();
+    }
+    else if (command.includes('read') || command.includes('detect')) {
+      showToast('Voice Command: Detecting Braille...', 'success');
+      if (dom.btnDetectUpload) dom.btnDetectUpload.click();
+    }
+  };
+
+  recognition.onend = () => {
+    recognition.start(); // Auto-restart
+  };
+  
+  try {
+    recognition.start();
+  } catch(e) {}
+}
+</script></body></html>
