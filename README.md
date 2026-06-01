@@ -99,12 +99,16 @@ BrailleVision/
 ├── backend/
 │   ├── app.py                 # FastAPI server and endpoint routing
 │   ├── inference.py           # YOLO inference, OpenCV filters, and decoding logic
-│   ├── requirements.txt       # Python dependencies
-│   └── models/
-│       └── best.pt            # DotNeuralNet Foundation YOLOv8 weights
+│   └── requirements.txt       # Python dependencies
+├── model/
+│   └── best.pt                # DotNeuralNet Foundation YOLOv8 weights
 ├── frontend/
 │   └── index.html             # Client UI, webcam capture, and canvas rendering
-├── ai_tools_disclosure.md     # Hackathon disclosure document
+├── dataset/                   # Sample inputs and test images
+├── training/                  # Training scripts and experimental notebooks
+├── demo/                      # Demo video scripts and assets
+├── start.bat                  # Automated Windows startup script
+├── ai_tools_disclosure.md     # Hackathon AI disclosure document
 └── README.md                  # Project documentation
 ```
 
