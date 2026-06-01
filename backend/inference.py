@@ -218,6 +218,7 @@ CUSTOM_WORDS = [
 OVERRIDES = {
     'jaihxqd': 'jai hind',
     'juihisa': 'jai hind',
+    'jzihiaa': 'jai hind',
     'indix': 'india',
     'isrrlly': 'visually',
     'grex?': 'great',
