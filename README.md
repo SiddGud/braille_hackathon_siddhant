@@ -32,19 +32,18 @@ The core of BrailleVision is an end‑to‑end deep learning pipeline. Unlike tr
 
 5. Model Details
 Base Architecture: YOLOv8n (Nano)  
-Fine‑Tuning: The model was fine‑tuned for 50 epochs using a highly constrained augmentation strategy.  
+Fine‑Tuning: The model was fine‑tuned for ~63 total epochs (43 local epochs before a hardware crash, followed by 20 epochs on Google Colab) using a highly constrained augmentation strategy.  
 Crucial Hyperparameters: fliplr=0.0 and flipud=0.0. Horizontal and vertical flipping augmentations were explicitly disabled during training. Braille is chiral; flipping a character horizontally changes its fundamental meaning (e.g., ‘w’ and ‘r’ are mirrors of each other). Disabling these augmentations prevented catastrophic class confusion during training.  
 Batch Size: 8 (optimized for lower‑tier hardware constraints).  
 Final Metrics: Achieved an mAP50 of 0.989 on the validation set.  
-Training Hardware: NVIDIA T4 Tensor Core GPU.
+Training Hardware: Local GPU + NVIDIA T4 Tensor Core GPU (Colab).
 
 6. Preprocessing & Fallback Logic
 When the neural network detects an unknown binary pattern (outputting a ‘?’ due to ambiguous shadow angles), the system employs a deterministic mirror‑swap fallback. By swapping the left column with the right column in the detected binary string, it mathematically corrects instances where the lighting direction caused the neural network’s spatial pooling to invert the shadow perception.
 
 7. Dataset Details
 Dataset Name	Source	Purpose	Volume  
-Angelina Braille Dataset	Roboflow / Open Source	Primary training data. Contains complex real‑world shadows and warped paper.	~1,500 images  
-DSBI (Double‑Sided)	Academic Repository	Edge‑case training for double‑sided punched paper interference.	~300 images  
+Kaggle Braille Character Dataset (shanks0465)	Kaggle	Primary training data. Contains complex real‑world shadows and warped paper.	~1,800 images  
 Synthetic Generator	Custom Python Script	Baseline bootstrapping and perfect‑condition validation matrices.	Dynamically Generated
 
 8. Technology Stack
@@ -170,14 +169,12 @@ To verify the system’s capabilities without a webcam or physical Braille paper
 To verify or improve the model accuracy, you can reproduce our training pipeline using Google Colab:
 
 1. Create a new Google Colab notebook and select a T4 GPU runtime.  
-2. Install dependencies: `!pip install ultralytics roboflow`  
-3. Download the dataset via the Roboflow API (requires a free API key):
+2. Install dependencies: `!pip install ultralytics kaggle`  
+3. Download the dataset via the Kaggle API:
 
-```python
-from roboflow import Roboflow
-rf = Roboflow(api_key="YOUR_KEY")
-project = rf.workspace().project("braille-character-detection")
-dataset = project.version(1).download("yolov8")
+```bash
+!kaggle datasets download -d shanks0465/braille-character-dataset
+!unzip -q braille-character-dataset.zip -d dataset/
 ```
 
 4. Copy the contents of `train.py` into a new Colab cell. Ensure `batch=8` and `cache=False` remain set to prevent RAM exhaustion.  
@@ -189,7 +186,7 @@ Double‑Sided Interference: Standard embossed Braille paper often has dots punc
 Mobile Native Application: The current implementation relies on a web browser. Migrating the model to ONNX or CoreML for on‑device inference via a native iOS/Android application would significantly reduce latency and eliminate the need for internet connectivity.
 
 16. Disclosure
-Datasets: Models were trained utilizing open‑source community data, specifically leveraging variations of the Angelina Braille Dataset hosted on Roboflow Universe.  
+Datasets: Models were trained utilizing open‑source community data, specifically leveraging the Braille Character Dataset hosted on Kaggle (shanks0465).  
 Architecture: The core object detection utilizes the Ultralytics YOLOv8 architecture.  
 Generative AI: Generative language models were utilized to assist in writing boilerplate CSS, scaffolding FastAPI endpoints, and drafting sections of this documentation. All core algorithmic logic, deployment, and model tuning were implemented manually.
 
