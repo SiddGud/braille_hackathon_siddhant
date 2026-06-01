@@ -324,6 +324,7 @@
       background: #000;
       width: 100%;
       aspect-ratio: 16/9;
+      max-height: 400px;
       overflow: hidden;
     }
     #live-video {
@@ -518,7 +519,7 @@
     .upload-preview img {
       width: 100%;
       border-radius: var(--radius);
-      max-height: 400px;
+      max-height: 300px;
       object-fit: contain;
       background: #000;
     }
@@ -1213,7 +1214,7 @@
               <video id="live-video" autoplay muted playsinline></video>
               <canvas id="overlay-canvas"></canvas>
               <div class="cam-placeholder" id="cam-placeholder">
-              <div class="cam-placeholder-icon"></div>
+              <div class="cam-placeholder-icon">📷</div>
               <p>Click <strong>Start Camera</strong> to begin</p>
             </div>
           </div>
