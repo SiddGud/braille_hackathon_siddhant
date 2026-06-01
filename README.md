@@ -27,24 +27,28 @@ The system operates on a highly optimized, low‑latency client‑server archite
        |                                              |
 [ Render UI & Trigger Text‑to‑Speech ]
 
-4. Single‑Stage Detection Pipeline
-The core of BrailleVision is an end‑to‑end deep learning pipeline. Unlike traditional optical Braille recognition that struggles with uneven shadows on embossed paper, our system uses a unified object detection approach. The YOLO architecture simultaneously predicts bounding boxes and class probabilities (the 6‑bit binary state of the Braille cell) directly from full images in a single evaluation. This unified architecture allows the system to process video frames in real‑time while remaining highly resilient to complex lighting environments.
+4. The Engineering Journey & Pipeline
+During development, we initially experimented with taking heavier, pre-existing models (including 11M+ parameter YOLO models and the open-source DotNeuralNet weights) and fine-tuning them across multiple GPU platforms (Local NVIDIA T4s and Google Colab). While these heavy models reached impressive validation metrics (up to ~93% mAP), we found they were incredibly brittle in the real world—hallucinating wildly on our specific physical test images due to slight lighting variations.
+
+We realized that raw model size was not the answer. Instead, we shifted our architecture to use a balanced foundation model combined with a heavily optimized, multi-stage pipeline:
+
+* **Stage 1 (OpenCV Preprocessing):** Before the image even touches the neural network, we apply a mathematical **Bilateral Filter** (`cv2.bilateralFilter`). This actively smooths out paper grain, shadows, and noise, while preserving the sharp, high-frequency edges of the physical braille dots.
+* **Stage 2 (Test-Time Augmentation):** We run the YOLO inference with **TTA (Test-Time Augmentation)** enabled, allowing the model to internally scale and evaluate the image at multiple resolutions.
+* **Stage 3 (Foundation Model):** We utilized the open-source DotNeuralNet YOLOv8-m weights (pretrained on the Angelina dataset) as our underlying baseline brain.
+* **Stage 4 (Post-Processing Heuristics):** Since YOLO models will inevitably make character-level errors on blurry images, we implemented a custom Python `difflib` autocorrection layer that acts as a spellchecker, evaluating the spatial output and fuzzy-matching it to physical context.
 
 5. Model Details
-Base Architecture: YOLOv8n (Nano)  
-Fine‑Tuning: The model was fine‑tuned for ~63 total epochs (43 local epochs before a hardware crash, followed by 20 epochs on Google Colab) using a highly constrained augmentation strategy.  
-Crucial Hyperparameters: fliplr=0.0 and flipud=0.0. Horizontal and vertical flipping augmentations were explicitly disabled during training. Braille is chiral; flipping a character horizontally changes its fundamental meaning (e.g., ‘w’ and ‘r’ are mirrors of each other). Disabling these augmentations prevented catastrophic class confusion during training.  
-Batch Size: 8 (optimized for lower‑tier hardware constraints).  
-Final Metrics: Achieved an mAP50 of 0.989 on the validation set.  
-Training Hardware: Local GPU + NVIDIA T4 Tensor Core GPU (Colab).
+**Base Architecture:** YOLOv8-m (Foundation Model via DotNeuralNet)  
+**Preprocessing Layer:** OpenCV Bilateral Filtering (d=9, sigmaColor=75, sigmaSpace=75) + Test-Time Augmentation (TTA)  
+**Post-Processing:** Custom Spatial Clustering + `difflib` Fuzzy Context Matching  
+**Final Metrics:** Achieved high accuracy on both generalized textbook scans and our physical hackathon test images.  
 
-6. Preprocessing & Fallback Logic
-When the neural network detects an unknown binary pattern (outputting a ‘?’ due to ambiguous shadow angles), the system employs a deterministic mirror‑swap fallback. By swapping the left column with the right column in the detected binary string, it mathematically corrects instances where the lighting direction caused the neural network’s spatial pooling to invert the shadow perception.
-
-7. Dataset Details
-Dataset Name	Source	Purpose	Volume  
-Kaggle Braille Character Dataset (shanks0465)	Kaggle	Primary training data. Contains complex real‑world shadows and warped paper.	~1,800 images  
-Synthetic Generator	Custom Python Script	Baseline bootstrapping and perfect‑condition validation matrices.	Dynamically Generated
+6. Dataset Details
+| Dataset Name | Source | Purpose |
+| --- | --- | --- |
+| Angelina Braille Dataset (via Foundation Weights) | Open Source | Provided the generalized baseline for textbook and document scanning. |
+| Kaggle Braille Character Dataset | Kaggle | Initial baseline bootstrapping and experimentation. |
+| Custom Physical Images | Local | Used to tune our mathematical preprocessing and autocorrect layers. |
 
 8. Technology Stack
 Layer	Technology  

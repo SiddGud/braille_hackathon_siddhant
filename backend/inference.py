@@ -257,16 +257,17 @@ def post_process_text(words_with_conf):
     return " ".join(corrected_words)
 
 def _run_inference_yolo_single(image: np.ndarray) -> dict:
-    results = _yolo_model(image, verbose=False)[0]
+    processed = cv2.bilateralFilter(image, 9, 75, 75)
+    results = _yolo_model.predict(processed, augment=True, conf=0.35, verbose=False)[0]
     boxes = results.boxes
     if boxes is None or len(boxes) == 0:
         return {'text': '', 'cells': [], 'dots_detected': 0, 'cells_detected': 0, 'confidence': 0.0, 'method': 'yolov8'}
 
-    # 4. YOLO confidence threshold: Lowered to 0.25 to catch missing letters (suggestion 1)
+    # 4. YOLO confidence threshold: Set to 0.35 as per the new pipeline
     initial_boxes = []
     for i in range(len(boxes)):
         conf = float(boxes.conf[i].cpu().numpy())
-        if conf < 0.25:
+        if conf < 0.35:
             continue
             
         box = boxes.xyxy[i].cpu().numpy()
@@ -465,46 +466,8 @@ def semantic_score(text: str) -> int:
     return score
 
 def run_inference_yolo(image: np.ndarray) -> dict:
-    import numpy as np
-    import cv2
-    variants = []
-    variants.append(('original', image.copy()))
-    
-    # High Contrast CLAHE
-    if len(image.shape) == 3:
-        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-        l, a, b = cv2.split(lab)
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
-        cl = clahe.apply(l)
-        limg = cv2.merge((cl,a,b))
-        high_contrast = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
-    else:
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
-        high_contrast = clahe.apply(image)
-    variants.append(('high_contrast', high_contrast))
-    
-    # Darkened Gamma
-    gamma = 2.0
-    invGamma = 1.0 / gamma
-    table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype('uint8')
-    darkened = cv2.LUT(image, table)
-    variants.append(('darkened', darkened))
-    
-    best_score = -1
-    best_result = None
-    
-    for name, var_img in variants:
-        res = _run_inference_yolo_single(var_img)
-        text = res.get('text', '')
-        score = semantic_score(text)
-        
-        if score > best_score:
-            best_score = score
-            best_result = res
-            
-    if best_score <= 0:
-        return _run_inference_yolo_single(image)
-    return best_result
+    # Upgraded pipeline: Skip the slow contrast variants and run the single preprocessed TTA inference
+    return _run_inference_yolo_single(image)
 
 def run_inference(image: np.ndarray) -> dict:
     if image is None or image.size == 0:
