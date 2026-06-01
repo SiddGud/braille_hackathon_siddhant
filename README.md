@@ -1,6 +1,7 @@
 # BrailleVision
 Real-Time Optical Braille Recognition and Translation System
 
+📺 **[Watch the Final Demo Video Here!](https://drive.google.com/file/d/1D07q-2TLL76e7ME8Bo_MI0jFUzytOQfg/view?usp=drive_link)**
 ## 1. Problem Statement
 According to the World Health Organization, at least 2.2 billion people globally have a near or distance vision impairment. While Braille remains the fundamental tool for literacy, education, and employment for the visually impaired, Braille literacy rates have been declining. A major contributing factor is the lack of accessible translation tools. Sighted teachers, parents, and peers often cannot read Braille, creating a significant communication barrier. Traditional Braille translation requires expensive, specialized hardware or manual transcription, which is slow and inaccessible to the general public.
 
