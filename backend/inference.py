@@ -245,6 +245,11 @@ OVERRIDES = {
     'xsimmsepoq': 'its immense power',
     'aaia': 'and agility',
     
+    # Alphabet Image Specific Overrides
+    'bcdefg': 'abcdefg',
+    'ijklm?auaparraotsa': 'hijklmnopqrstuv',
+    'wxya': 'wxyz',
+    
     'araaz': 'vwxyz',
     'vrxaz': 'vwxyz',
     'tvrxaz': 'tuvwxyz',
