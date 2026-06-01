@@ -306,25 +306,24 @@ def _run_inference_yolo_single(image: np.ndarray) -> dict:
     if not valid_boxes:
         return run_inference_classical(image)
 
-    from sklearn.cluster import DBSCAN, KMeans
-    
-    # 1. SOTA Line Segmentation using DBSCAN on Y-axis
+    # 1. Line Segmentation (Pure Python 1D Density Clustering)
     # This groups boxes into lines based on vertical density, ignoring slight skews.
-    y_coords = np.array([[b['cy']] for b in valid_boxes])
+    valid_boxes.sort(key=lambda b: b['cy'])
     avg_box_h = sum(b['h'] for b in valid_boxes) / len(valid_boxes)
     
     # eps = avg_box_h * 0.8 allows a bit of wobble in the line without breaking it.
-    dbscan = DBSCAN(eps=avg_box_h * 0.8, min_samples=1)
-    labels = dbscan.fit_predict(y_coords)
+    eps = avg_box_h * 0.8
     
-    # Group boxes by their DBSCAN label
-    lines_dict = {}
-    for b, label in zip(valid_boxes, labels):
-        lines_dict.setdefault(label, []).append(b)
-        
-    # Sort lines top to bottom by the average Y coordinate of the line
-    lines = list(lines_dict.values())
-    lines.sort(key=lambda line: sum(b['cy'] for b in line) / len(line))
+    lines = []
+    current_line = [valid_boxes[0]]
+    
+    for b in valid_boxes[1:]:
+        if abs(b['cy'] - current_line[-1]['cy']) <= eps:
+            current_line.append(b)
+        else:
+            lines.append(current_line)
+            current_line = [b]
+    lines.append(current_line)
 
     cells = []
     all_confs = []
@@ -334,7 +333,7 @@ def _run_inference_yolo_single(image: np.ndarray) -> dict:
     for line in lines:
         line.sort(key=lambda b: b['cx'])
         
-        # 2. SOTA Word Boundary Detection using K-Means (or fallback to dynamic threshold)
+        # 2. Word Boundary Detection (Pure Python Dynamic Thresholding)
         # Calculate all gaps between adjacent cells in this line
         gaps = []
         for i in range(1, len(line)):
@@ -345,24 +344,22 @@ def _run_inference_yolo_single(image: np.ndarray) -> dict:
             gaps.append(gap)
             
         # Determine the dynamic space threshold
-        # If there are enough gaps and a clear variation, use KMeans to find the split.
-        # Otherwise, fall back to a safer relative calculation based on the line's avg width.
         avg_w = sum(b['w'] for b in line) / len(line)
         space_threshold = avg_w * 1.5 # Default fallback
         
-        if len(gaps) >= 3:
-            try:
-                # Reshape for sklearn
-                gaps_arr = np.array(gaps).reshape(-1, 1)
-                kmeans = KMeans(n_clusters=2, n_init=5, random_state=42)
-                kmeans.fit(gaps_arr)
-                centers = sorted(kmeans.cluster_centers_.flatten())
-                # If the two clusters are distinct enough (e.g. one is at least 1.5x the other)
-                if centers[1] > centers[0] * 1.5:
-                    # Threshold is the midpoint between the two clusters
-                    space_threshold = (centers[0] + centers[1]) / 2.0
-            except:
-                pass
+        if len(gaps) >= 2:
+            # Find the largest "cliff" in the sorted gaps (equivalent to 1D K-Means k=2)
+            sorted_gaps = sorted(gaps)
+            max_diff = 0
+            best_split = sorted_gaps[0]
+            for i in range(len(sorted_gaps) - 1):
+                diff = sorted_gaps[i+1] - sorted_gaps[i]
+                if diff > max_diff:
+                    max_diff = diff
+                    best_split = (sorted_gaps[i] + sorted_gaps[i+1]) / 2.0
+            
+            if max_diff > avg_w * 0.5:
+                space_threshold = best_split
         
         words_with_conf = []
         current_word = ""
