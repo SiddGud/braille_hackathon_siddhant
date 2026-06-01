@@ -33,7 +33,7 @@ Getting the AI smart enough to process real-world physical paper took a massive 
 
 However, we learned a hard lesson: while these heavy models reached impressive validation metrics, they were incredibly brittle in the real world. They hallucinated wildly on our specific physical test images due to slight lighting variations and shadows.
 
-We realized that raw model size was not the answer. Instead, we shifted our architecture to use a balanced foundation model combined with a heavily optimized, multi-stage pipeline:
+We realized that raw model size was not the answer. Instead, we shifted our architecture to use a lighter, balanced foundation model combined with a heavily optimized, multi-stage pipeline. By focusing on mathematical image processing rather than raw parameter count, our final real-world accuracy actually surpassed the heavy models, delivering a flawless output on our physical test cases:
 
 * **Stage 1 (OpenCV Preprocessing):** Before the image even touches the neural network, we apply a mathematical **Bilateral Filter** (`cv2.bilateralFilter`). This actively smooths out paper grain, shadows, and noise, while preserving the sharp, high-frequency edges of the physical braille dots.
 * **Stage 2 (Test-Time Augmentation):** We run the YOLO inference with **TTA (Test-Time Augmentation)** enabled, allowing the model to internally scale and evaluate the image at multiple resolutions.
