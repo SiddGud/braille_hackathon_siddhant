@@ -14,12 +14,13 @@
 
 ## Dataset Information
 - **Primary Datasets:** 
-  1. Roboflow Open Braille Dataset (yapayzeka)
-  2. Angelina Braille Reader Dataset (IlyaOvodov)
+  1. DSBI (Double-Sided Braille Image) Dataset
+  2. Kaggle Braille Alphabet (26-Class) Dataset
+  3. Custom Hand-Curated Physical Paper Images
 - **Total Volume:** ~1,614 images
 - **Annotation Format:** YOLO format (`.txt` files with normalized bounding box coordinates)
 - **Class Names:** a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z (26 classes)
-- **Dataset Download:** Full datasets are too large for GitHub and can be downloaded directly from their respective Roboflow Universe and GitHub release endpoints. A subset of validation images is provided in `sample_dataset.zip` for local testing.
+- **Dataset Download:** The open-source DSBI and Kaggle datasets can be downloaded directly from their respective public endpoints. The custom physical paper subset is provided in `sample_dataset.zip` for local testing.
 
 ## Train / Validation / Test Split
 - **Train:** ~1,350 images (75%)
